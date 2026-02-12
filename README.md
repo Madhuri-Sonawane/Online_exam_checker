@@ -1,16 +1,149 @@
-# React + Vite
+# Secure Online Assessment – Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## 📌 Overview
 
-Currently, two official plugins are available:
+This is the frontend application for a Secure Test Environment system.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+It provides a controlled online exam interface that integrates with a secure backend to:
 
-## React Compiler
+- Capture candidate details
+- Monitor browser behavior
+- Detect suspicious actions
+- Log structured audit events
+- Enforce full-screen mode
+- Monitor IP changes
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+The frontend does not make security decisions — the backend remains the source of truth.
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 🚀 Features
+
+### 📝 Candidate Registration
+- First Name
+- Surname
+- Email
+
+These details are linked to the assessment attempt.
+
+---
+
+### ⏱ 60-Minute Countdown Timer
+- Timer starts only after "Start Exam."
+- Auto-submit when time reaches 0
+- Logs:
+  - `TIMER_STARTED`
+  - `TIMER_ENDED`
+
+---
+
+### 🖥 Fullscreen Enforcement
+- Exam forces full-screen mode
+- Exit from full screen is detected
+- Events logged:
+  - `FULLSCREEN_ENTER`
+  - `FULLSCREEN_EXIT`
+
+---
+
+### 🚨 Activity Monitoring
+
+During the assessment, the following actions are detected and logged:
+
+- Copy attempt → `COPY_ATTEMPT`
+- Paste attempt → `PASTE_ATTEMPT`
+- Tab switch/focus loss → `TAB_SWITCH.`
+- Question selection → `QUESTION_ANSWERED`
+
+All logs follow a unified event schema.
+
+---
+
+### 🌐 IP Monitoring Integration
+
+- Periodic IP validation via backend
+- If IP changes:
+  - Non-blocking warning displayed
+  - Event logged: `IP_CHANGE_WARNING_SHOWN`
+- Warning is neutral and does not interrupt exam flow
+
+---
+
+### 📦 Event Logging Architecture
+
+All events include:
+
+- eventType
+- attemptId
+- timestamp
+- questionId (if applicable)
+- metadata (browser, focus state, etc.)
+
+Events are:
+
+- Temporarily stored in localStorage
+- Batched before sending to backend
+- Persisted during refresh
+- Flushed on exam submission
+- Blocked after exam ends
+
+---
+
+## 🛠 Tech Stack
+
+- React (Vite)
+- JavaScript
+- Fetch API
+- Fullscreen API
+- LocalStorage
+
+---
+
+## ⚙️ Setup Instructions
+
+### 1️⃣ Clone Repository
+
+```bash
+git clone https://github.com/Madhuri-Sonawane/Online_exam_checker
+cd Online_exam_checker
+2️⃣ Install Dependencies
+npm install
+3️⃣ Configure Backend URL
+Open:
+
+src/api/api.js
+Replace API base URL with your deployed backend URL.
+
+Example:
+
+const BASE_URL = "https://your-backend-url.com";
+4️⃣ Run Locally
+npm run dev
+🌍 Deployment
+This project can be deployed on:
+
+Vercel
+
+Netlify
+
+GitHub Pages
+
+Before deploying, ensure:
+
+Backend is deployed
+
+API URL updated
+
+CORS enabled on backend
+
+🔐 Security Design Notes
+Backend validates IP changes
+
+Frontend only reports browser activity
+
+Logs become immutable after submission
+
+The employer dashboard provides a complete audit trail
+
+👤 Author
+Madhuri Rajendra Sonawane
