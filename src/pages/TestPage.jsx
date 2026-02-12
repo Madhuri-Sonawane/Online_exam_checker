@@ -3,7 +3,7 @@ import { startExam, endExam, checkIp } from "../api/api";
 import { logEvent, flushEvents } from "../utils/eventLogger";
 
 export default function TestPage() {
-  
+
   const [examStarted, setExamStarted] = useState(false);
   const [timeLeft, setTimeLeft] = useState(60 * 60);
   const [warning, setWarning] = useState("");
@@ -11,33 +11,13 @@ export default function TestPage() {
   const [name, setName] = useState("");
   const [surname, setSurname] = useState("");
   const [email, setEmail] = useState("");
-
   const [answers, setAnswers] = useState({});
-  const [ipWarningShown, setIpWarningShown] = useState(false);
-
-  const attemptId = localStorage.getItem("attemptId");
 
   const questions = [
-    {
-      id: 1,
-      question: "What is React?",
-      options: ["Library", "Framework", "Database", "Language"]
-    },
-    {
-      id: 2,
-      question: "Which hook manages state?",
-      options: ["useState", "useEffect", "useRef", "useMemo"]
-    },
-    {
-      id: 3,
-      question: "What is Node.js?",
-      options: ["Runtime", "Database", "UI Tool", "Browser"]
-    },
-    {
-      id: 4,
-      question: "What is MongoDB?",
-      options: ["SQL DB", "NoSQL DB", "Frontend", "Language"]
-    }
+    { id: 1, question: "What is React?", options: ["Library", "Framework", "Database", "Language"] },
+    { id: 2, question: "Which hook manages state?", options: ["useState", "useEffect", "useRef", "useMemo"] },
+    { id: 3, question: "What is Node.js?", options: ["Runtime", "Database", "UI Tool", "Browser"] },
+    { id: 4, question: "What is MongoDB?", options: ["SQL DB", "NoSQL DB", "Frontend", "Language"] }
   ];
 
   /* ================= TIMER ================= */
@@ -57,43 +37,44 @@ export default function TestPage() {
     return () => clearInterval(timer);
   }, [examStarted]);
 
-/* ================= IP MONITORING ================= */
+  /* ================= IP MONITORING ================= */
+  useEffect(() => {
+    if (!examStarted) return;
 
-useEffect(() => {
-  if (!examStarted) return;
+    let warningActive = false;
 
-  let warningActive = false;
+    const interval = setInterval(async () => {
+      try {
+        const attemptId = localStorage.getItem("attemptId");
+        if (!attemptId) return;
 
-  const interval = setInterval(async () => {
-    try {
-      const res = await checkIp(attemptId);
+        const res = await checkIp(attemptId);
 
-      if (res?.ipChanged && !warningActive) {
-        warningActive = true;
+        if (res?.ipChanged && !warningActive) {
+          warningActive = true;
 
-        const message =
-          "Network configuration change detected. Assessment will continue.";
+          const message =
+            "Network configuration change detected. Assessment will continue.";
 
-        // Log warning event
-        logEvent("IP_CHANGE_WARNING_SHOWN", {
-          message,
-          severity: "INFO"
-        });
+          logEvent("IP_CHANGE_WARNING_SHOWN", {
+            message,
+            severity: "INFO"
+          });
 
-        setWarning(message);
+          setWarning(message);
 
-        setTimeout(() => {
-          setWarning("");
-          warningActive = false;
-        }, 4000);
+          setTimeout(() => {
+            setWarning("");
+            warningActive = false;
+          }, 4000);
+        }
+      } catch (err) {
+        console.error("IP monitoring error", err);
       }
-    } catch (err) {
-      console.error("IP monitoring error", err);
-    }
-  }, 60000);
+    }, 60000);
 
-  return () => clearInterval(interval);
-}, [examStarted, attemptId]);
+    return () => clearInterval(interval);
+  }, [examStarted]);
 
   /* ================= COPY / PASTE / TAB ================= */
   useEffect(() => {
@@ -132,79 +113,81 @@ useEffect(() => {
     setTimeout(() => setWarning(""), 3000);
   };
 
-const enterFullscreen = () => {
-  const elem = document.documentElement;
-
-  if (elem.requestFullscreen) {
-    elem.requestFullscreen();
-  }
-};
-
-const handleFullscreenChange = () => {
-  if (!document.fullscreenElement && examStarted) {
-    logEvent("FULLSCREEN_EXIT", {
-      message: "User exited fullscreen mode"
-    });
-
-    showWarning("Fullscreen mode exited. Please return to fullscreen.");
-  } else if (document.fullscreenElement) {
-    logEvent("FULLSCREEN_ENTER");
-  }
-};
-useEffect(() => {
-  document.addEventListener("fullscreenchange", handleFullscreenChange);
-
-  return () => {
-    document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  /* ================= FULLSCREEN ================= */
+  const enterFullscreen = () => {
+    const elem = document.documentElement;
+    if (elem.requestFullscreen) {
+      elem.requestFullscreen();
+    }
   };
-}, [examStarted]);
 
+  const handleFullscreenChange = () => {
+    if (!document.fullscreenElement && examStarted) {
+      logEvent("FULLSCREEN_EXIT", {
+        message: "User exited fullscreen mode"
+      });
+
+      showWarning("Fullscreen exited. Please return to fullscreen.");
+    } else if (document.fullscreenElement) {
+      logEvent("FULLSCREEN_ENTER");
+    }
+  };
+
+  useEffect(() => {
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, [examStarted]);
 
   /* ================= START EXAM ================= */
- const handleStartExam = async () => {
-  if (!name || !surname || !email) {
-    alert("Please fill all fields");
-    return;
-  }
-
-  try {
-    const data = await startExam();
-    localStorage.setItem("attemptId", data.attemptId);
-
-    enterFullscreen();
-
-    logEvent("FULLSCREEN_ENTER", {
-      triggeredBy: "exam_start"
-    });
-
-    logEvent("TIMER_STARTED");
-
-    setExamStarted(true);
-  } catch (err) {
-    console.error("Start exam failed", err);
-  }
-};
-
-  /* ================= END EXAM ================= */
- const handleEndExam = async () => {
-  try {
-    logEvent("TIMER_ENDED");
-
-    await flushEvents();
-    await endExam(localStorage.getItem("attemptId"));
-    localStorage.setItem("examEnded", "true");
-    
-    if (document.fullscreenElement) {
-      document.exitFullscreen();
+  const handleStartExam = async () => {
+    if (!name || !surname || !email) {
+      alert("Please fill all fields");
+      return;
     }
 
-    setExamStarted(false);
-    alert("Exam submitted");
-  } catch (err) {
-    console.error("End exam failed", err);
-  }
-};
+    try {
+      localStorage.removeItem("examEnded"); // reset flag
 
+     const data = await startExam({
+        firstName: name,
+        surname,
+        email
+      });
+      localStorage.setItem("attemptId", data.attemptId);
+
+      enterFullscreen();
+
+      logEvent("FULLSCREEN_ENTER", { triggeredBy: "exam_start" });
+      logEvent("TIMER_STARTED");
+
+      setExamStarted(true);
+    } catch (err) {
+      console.error("Start exam failed", err);
+    }
+  };
+
+  /* ================= END EXAM ================= */
+  const handleEndExam = async () => {
+    try {
+      logEvent("TIMER_ENDED");
+
+      await flushEvents();
+      await endExam(localStorage.getItem("attemptId"));
+
+      localStorage.setItem("examEnded", "true");
+
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      }
+
+      setExamStarted(false);
+      alert("Exam submitted");
+    } catch (err) {
+      console.error("End exam failed", err);
+    }
+  };
 
   const formatTime = () => {
     const minutes = Math.floor(timeLeft / 60);

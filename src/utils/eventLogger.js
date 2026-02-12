@@ -1,9 +1,7 @@
 const STORAGE_KEY = "exam_event_queue";
 
-/**
- * Add event to local queue
- */
 export const logEvent = (eventType, metadata = {}) => {
+  // ✅ Get fresh attemptId every time
   const attemptId = localStorage.getItem("attemptId");
   const examEnded = localStorage.getItem("examEnded");
 
@@ -30,41 +28,19 @@ export const logEvent = (eventType, metadata = {}) => {
     STORAGE_KEY,
     JSON.stringify(existing)
   );
-
-  console.log("Event queued:", event); // 🔥 DEBUG
 };
 
-
-/**
- * Send events to backend
- */
 export const flushEvents = async () => {
   const events =
     JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
 
-  if (!events.length) {
-    console.log("No events to flush");
-    return;
-  }
+  if (!events.length) return;
 
-  try {
-    const response = await fetch("http://localhost:4000/events/log", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(events)
-    });
+  await fetch("http://localhost:4000/events/log", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(events)
+  });
 
-    if (!response.ok) {
-      const error = await response.json();
-      console.error("Flush failed:", error);
-      return;
-    }
-
-    console.log("Events flushed to backend:", events);
-
-    localStorage.removeItem(STORAGE_KEY);
-
-  } catch (err) {
-    console.error("Flush error:", err);
-  }
+  localStorage.removeItem(STORAGE_KEY);
 };
