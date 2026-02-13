@@ -3,7 +3,6 @@ import { startExam, endExam, checkIp } from "../api/api";
 import { logEvent, flushEvents } from "../utils/eventLogger";
 
 export default function TestPage() {
-
   const [examStarted, setExamStarted] = useState(false);
   const [timeLeft, setTimeLeft] = useState(60 * 60);
   const [warning, setWarning] = useState("");
@@ -116,8 +115,9 @@ export default function TestPage() {
   /* ================= FULLSCREEN ================= */
   const enterFullscreen = () => {
     const elem = document.documentElement;
+
     if (elem.requestFullscreen) {
-      elem.requestFullscreen();
+      elem.requestFullscreen().catch(() => {});
     }
   };
 
@@ -126,10 +126,7 @@ export default function TestPage() {
       logEvent("FULLSCREEN_EXIT", {
         message: "User exited fullscreen mode"
       });
-
       showWarning("Fullscreen exited. Please return to fullscreen.");
-    } else if (document.fullscreenElement) {
-      logEvent("FULLSCREEN_ENTER");
     }
   };
 
@@ -141,31 +138,34 @@ export default function TestPage() {
   }, [examStarted]);
 
   /* ================= START EXAM ================= */
-  const handleStartExam = async () => {
+  const handleStartExam = (e) => {
+    e.preventDefault();
+
     if (!name || !surname || !email) {
       alert("Please fill all fields");
       return;
     }
 
-    try {
-      localStorage.removeItem("examEnded"); // reset flag
+    // 🔹 MUST be directly triggered by user click
+    enterFullscreen();
 
-     const data = await startExam({
-        firstName: name,
-        surname,
-        email
+    startExam({
+      firstName: name,
+      surname,
+      email
+    })
+      .then((data) => {
+        localStorage.removeItem("examEnded");
+        localStorage.setItem("attemptId", data.attemptId);
+
+        logEvent("FULLSCREEN_ENTER", { triggeredBy: "exam_start" });
+        logEvent("TIMER_STARTED");
+
+        setExamStarted(true);
+      })
+      .catch((err) => {
+        console.error("Start exam failed", err);
       });
-      localStorage.setItem("attemptId", data.attemptId);
-
-      enterFullscreen();
-
-      logEvent("FULLSCREEN_ENTER", { triggeredBy: "exam_start" });
-      logEvent("TIMER_STARTED");
-
-      setExamStarted(true);
-    } catch (err) {
-      console.error("Start exam failed", err);
-    }
   };
 
   /* ================= END EXAM ================= */
@@ -179,7 +179,7 @@ export default function TestPage() {
       localStorage.setItem("examEnded", "true");
 
       if (document.fullscreenElement) {
-        document.exitFullscreen();
+        document.exitFullscreen().catch(() => {});
       }
 
       setExamStarted(false);

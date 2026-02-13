@@ -30,13 +30,15 @@ export const logEvent = (eventType, metadata = {}) => {
   );
 };
 
+const BASE_URL = "https://exam-secure-environment.onrender.com";
+
 export const flushEvents = async () => {
   const events =
     JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
 
   if (!events.length) return;
 
-  await fetch("http://localhost:4000/events/log", {
+  await fetch(`${BASE_URL}/events/log`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(events)
@@ -44,3 +46,4 @@ export const flushEvents = async () => {
 
   localStorage.removeItem(STORAGE_KEY);
 };
+

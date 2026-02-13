@@ -1,24 +1,21 @@
-const BASE_URL = "http://localhost:4000";
+const BASE_URL = "https://exam-secure-environment.onrender.com";
 
-export const startExam = async (candidateData) => {
-  const res = await fetch("http://localhost:4000/attempt/start", {
+export const startExam = async (userData) => {
+  const res = await fetch(`${BASE_URL}/attempt/start`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(candidateData)
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(userData)
   });
-
   return res.json();
 };
 
-
 export const endExam = async (attemptId) => {
-  await fetch(`${BASE_URL}/attempt/end`, {
+  const res = await fetch(`${BASE_URL}/attempt/end`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ attemptId })
   });
+  return res.json();
 };
 
 export const checkIp = async (attemptId) => {
