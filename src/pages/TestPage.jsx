@@ -115,7 +115,6 @@ export default function TestPage() {
   /* ================= FULLSCREEN ================= */
   const enterFullscreen = () => {
     const elem = document.documentElement;
-
     if (elem.requestFullscreen) {
       elem.requestFullscreen().catch(() => {});
     }
@@ -132,9 +131,8 @@ export default function TestPage() {
 
   useEffect(() => {
     document.addEventListener("fullscreenchange", handleFullscreenChange);
-    return () => {
+    return () =>
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
-    };
   }, [examStarted]);
 
   /* ================= START EXAM ================= */
@@ -146,14 +144,9 @@ export default function TestPage() {
       return;
     }
 
-    // 🔹 MUST be directly triggered by user click
     enterFullscreen();
 
-    startExam({
-      firstName: name,
-      surname,
-      email
-    })
+    startExam({ firstName: name, surname, email })
       .then((data) => {
         localStorage.removeItem("examEnded");
         localStorage.setItem("attemptId", data.attemptId);
@@ -204,145 +197,93 @@ export default function TestPage() {
   };
 
   return (
-    <div style={styles.wrapper}>
-      <div style={styles.card}>
-        <h2 style={{ textAlign: "center" }}>
-          Welcome to Online Assessment
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
+      <div className="w-full max-w-3xl bg-white shadow-xl rounded-xl p-6 md:p-10">
+
+        <h2 className="text-2xl font-bold text-center mb-6">
+          Online Assessment
         </h2>
 
         {!examStarted && (
-          <>
+          <form className="space-y-4" onSubmit={handleStartExam}>
             <input
-              style={styles.input}
+              className="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
               placeholder="First Name"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
 
             <input
-              style={styles.input}
+              className="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
               placeholder="Surname"
               value={surname}
               onChange={(e) => setSurname(e.target.value)}
             />
 
             <input
-              style={styles.input}
               type="email"
+              className="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
 
-            <button style={styles.primaryBtn} onClick={handleStartExam}>
+            <button
+              type="submit"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition"
+            >
               Start Exam
             </button>
-          </>
+          </form>
         )}
 
         {examStarted && (
-          <>
-            <div style={styles.timer}>
+          <div className="space-y-6">
+            <div className="text-center font-semibold text-lg text-blue-600">
               Time Left: {formatTime()}
             </div>
 
             {questions.map((q) => (
-              <div key={q.id} style={styles.questionBox}>
-                <p><strong>{q.question}</strong></p>
+              <div
+                key={q.id}
+                className="border rounded-lg p-4 bg-gray-50"
+              >
+                <p className="font-semibold mb-3">{q.question}</p>
 
-                {q.options.map((opt) => (
-                  <label key={opt} style={styles.option}>
-                    <input
-                      type="radio"
-                      name={`q${q.id}`}
-                      value={opt}
-                      onChange={() => handleAnswer(q.id, opt)}
-                    />
-                    {opt}
-                  </label>
-                ))}
+                <div className="space-y-2">
+                  {q.options.map((opt) => (
+                    <label
+                      key={opt}
+                      className="flex items-center gap-2 cursor-pointer"
+                    >
+                      <input
+                        type="radio"
+                        name={`q${q.id}`}
+                        value={opt}
+                        onChange={() => handleAnswer(q.id, opt)}
+                      />
+                      {opt}
+                    </label>
+                  ))}
+                </div>
               </div>
             ))}
 
-            <button style={styles.endBtn} onClick={handleEndExam}>
+            <button
+              onClick={handleEndExam}
+              className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 rounded-lg transition"
+            >
               End Exam
             </button>
-          </>
+          </div>
         )}
 
         {warning && (
-          <div style={styles.warning}>{warning}</div>
+          <div className="mt-6 bg-red-100 text-red-700 p-3 rounded-lg text-center text-sm">
+            {warning}
+          </div>
         )}
       </div>
     </div>
   );
 }
-
-/* ================= STYLES ================= */
-
-const styles = {
-  wrapper: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    minHeight: "100vh",
-    background: "#f3f4f6"
-  },
-  card: {
-    width: "100%",
-    maxWidth: 650,
-    background: "#ffffff",
-    padding: 30,
-    borderRadius: 10,
-    boxShadow: "0 4px 15px rgba(0,0,0,0.08)"
-  },
-  input: {
-    width: "100%",
-    padding: 10,
-    marginBottom: 15,
-    borderRadius: 6,
-    border: "1px solid #d1d5db"
-  },
-  primaryBtn: {
-    width: "100%",
-    padding: 10,
-    background: "#2563eb",
-    color: "white",
-    border: "none",
-    borderRadius: 6,
-    cursor: "pointer"
-  },
-  endBtn: {
-    marginTop: 20,
-    width: "100%",
-    padding: 10,
-    background: "#dc2626",
-    color: "white",
-    border: "none",
-    borderRadius: 6,
-    cursor: "pointer"
-  },
-  timer: {
-    textAlign: "center",
-    fontWeight: "bold",
-    marginBottom: 15
-  },
-  questionBox: {
-    marginBottom: 15,
-    padding: 12,
-    border: "1px solid #e5e7eb",
-    borderRadius: 6
-  },
-  option: {
-    display: "block",
-    marginTop: 5
-  },
-  warning: {
-    marginTop: 15,
-    padding: 10,
-    background: "#fee2e2",
-    borderRadius: 6,
-    color: "#b91c1c",
-    textAlign: "center"
-  }
-};
